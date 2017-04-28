@@ -44,14 +44,11 @@ driver = webdriver.Chrome(chrome_options=chrome_options)
 driver.get("https://{}:{}@sso.advisory.com/workday/login".format(user, password))
 
 time_icon = "//span[text() = 'Time']"
-element = WebDriverWait(driver, 10).until(lambda driver : driver.find_element_by_xpath(time_icon))
+element = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, time_icon)))
 element.click()
 
 this_week_button = "(//span[contains(text(), 'This Week')])[2]/.."
-element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, this_week_button)))
-
-time.sleep(1) # TODO: do this better!
-
+element = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, this_week_button)))
 element.click()
 
 # import ipdb; ipdb.set_trace()
