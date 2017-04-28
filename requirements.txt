@@ -1,1 +1,3 @@
 selenium==3.4.1
+keyring==10.3.2
+ipdb
