@@ -1,16 +1,62 @@
 import os
 import keyring
 import getpass
-# import contextlib
+import random
 import time
+
+from decimal import Decimal
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.expected_conditions import staleness_of
+
+
+def quarter_round(num):
+    """
+    Takes in a float and rounds it to the nearest 1/4
+    """
+    return Decimal(round(num * 4) / 4)
+
+
+def time_distribution(hours):
+    """
+    Generates 3 time slots based on the amount of hours
+    """
+    percents = {
+        'guide': 0,
+        'navigate': 0,
+        # set a base for the inputs
+        'admin': quarter_round(float(random.randrange(200, 4000)) / 100)
+    }
+
+    # Randomly loop over the remaining 2 slots and fill them out
+    for key in sorted(['guide', 'navigate'], key=lambda x: random.random()):
+        high = (10000 - (sum(percents.values()) * 100))
+        percents[key] = quarter_round(random.randrange(0, high) / 100)
+
+    total_sum = sum(percents.values())
+    while total_sum != 100:
+        high = (100 - total_sum)
+        percents[random.sample(percents.keys(), 1)[0]] += quarter_round(float(random.randrange(0, high * 100)) / 100)
+        total_sum = sum(percents.values())
+
+    distribution = {}
+    minutes = float(hours) * 60
+    for key, percent in percents.iteritems():
+        distribution[key] = quarter_round(minutes * (float(percent) / 100) / 60)
+
+    return distribution
+
+
+def week_distribution(min_daily_hours=8, max_daily_hours=13, days_in_week=5):
+    """
+    Generate a list of hours worked for an entire week
+    """
+    for _ in xrange(days_in_week):
+        daily_hours = quarter_round(random.uniform(min_daily_hours, max_daily_hours))
+        yield time_distribution(daily_hours)
 
 
 def get_password(user):
@@ -26,12 +72,9 @@ def get_password(user):
     return password
 
 
-# # @contextlib.contextmanager
-# def wait_for_page_load(timeout=20):
-#     print("Waiting for page to load at {}.".format(driver.current_url))
-#     old_page = driver.find_element_by_tag_name('html')
-#     # yield
-#     WebDriverWait(driver, timeout).until(staleness_of(old_page))
+def submenu_dropdown(driver, xpath_format, *menus):
+    for menu in menus:
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, xpath_format.format(menu)))).click()
 
 
 user = os.getenv('USER')
@@ -44,32 +87,49 @@ driver = webdriver.Chrome(chrome_options=chrome_options)
 driver.get("https://{}:{}@sso.advisory.com/workday/login".format(user, password))
 
 time_icon = "//span[text() = 'Time']"
-element = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, time_icon)))
-element.click()
+WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, time_icon))).click()
 
-this_week_button = "(//span[contains(text(), 'This Week')])[2]/.."
-element = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, this_week_button)))
-element.click()
+this_week_button = "(//span[contains(text(), 'This Week (')])/.."
+WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, this_week_button))).click()
 
-# import ipdb; ipdb.set_trace()
-time.sleep(5)
-# # wait_for_page_load()
-#
-# import ipdb; ipdb.set_trace()
-# # Find and click on the "Time" span
-# driver.find_elements_by_xpath("//span[text() = 'Time']")[0].click()
+days_in_week = "(//div[contains(@class, 'day-separator')])[{}]"
+for counter, distributions in enumerate(week_distribution()):
+    for time_type, hours in distributions.iteritems():
+        # for element in driver.find_elements_by_xpath(days_in_week):
+        element = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH,
+                                                                              days_in_week.format(counter + 1))))
 
+        # Click on the page to open the time dialog
+        action = webdriver.common.action_chains.ActionChains(driver)
+        action.move_to_element_with_offset(element, 5, 5)
+        action.click()
+        action.perform()
 
-# wait_for_page_load()
+        ok_button = "(//button/span[text() = 'OK'])/.."
+        ok_button_element = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, ok_button)))
 
+        # Open select the drop down
+        time_type_label = "(//label[contains(text(), 'Time Type')]/../../div)[2]"
+        driver.find_element_by_xpath(time_type_label).click()
 
+        # Make selection
+        if time_type == 'admin':
+            submenu_dropdown(driver, "//div[text() = '{}']", 'Project Plan Tasks', 'Education Advisory Board', 'All',
+                                     'Education Advisory Board > All - Admin/Other')
+        elif time_type == 'guide':
+            submenu_dropdown(driver, "//div[text() = '{}']", 'Project Plan Tasks', 'Education Advisory Board', 'EAB',
+                                     'Education Advisory Board > EAB - Guide  (01/01/2017 - 12/31/2017)')
+        elif time_type == 'navigate':
+            submenu_dropdown(driver, "//div[text() = '{}']", 'Project Plan Tasks', 'Education Advisory Board', 'EAB',
+                                     'Education Advisory Board > EAB - Navigate  (01/01/2017 - 12/31/2017)')
 
+        time.sleep(3)  # TODO: find a better solution
 
+        hours_input = "(//label[contains(text(), 'Hour')]/../../div)[2]/*/input"
+        hours_input_element = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, hours_input)))
+        hours_input_element.send_keys(Keys.BACKSPACE*10)
+        hours_input_element.send_keys(str(hours))
 
-# assert "Python" in driver.title
-# elem = driver.find_element_by_name("q")
-# elem.clear()
-# elem.send_keys("pycon")
-# elem.send_keys(Keys.RETURN)
-# assert "No results found." not in driver.page_source
+        ok_button_element.click()
+
 driver.close()
