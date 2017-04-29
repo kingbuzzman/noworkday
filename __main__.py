@@ -73,83 +73,100 @@ def get_password(user):
 
 
 def open_submenu(driver, time_type):
+    """
+    Open the dialog's drop down menu
+    """
     time_type_label = "(//label[contains(text(), 'Time Type')]/../../div)[2]/div/span/div"
-    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, time_type_label))).click()
+    get_element(driver, time_type_label).click()
 
-    try:
+    # try:
+    if True:
         # Make selection
         if time_type == 'admin':
-            submenu_dropdown(driver, "//div[text() = '{}']", 'Project Plan Tasks', 'Education Advisory Board', 'All',
-                                     'Education Advisory Board > All - Admin/Other')
+            submenu_dropdown(driver, "(//div[text() = '{}'])[last()]", 'Project Plan Tasks',
+                            'Education Advisory Board', 'All', 'Education Advisory Board > All - Admin/Other')
         elif time_type == 'guide':
-            submenu_dropdown(driver, "//div[text() = '{}']", 'Project Plan Tasks', 'Education Advisory Board', 'EAB',
-                                     'Education Advisory Board > EAB - Guide  (01/01/2017 - 12/31/2017)')
+            submenu_dropdown(driver, "(//div[text() = '{}'])[last()]", 'Project Plan Tasks',
+                             'Education Advisory Board', 'EAB',
+                             'Education Advisory Board > EAB - Guide  (01/01/2017 - 12/31/2017)')
         elif time_type == 'navigate':
-            submenu_dropdown(driver, "//div[text() = '{}']", 'Project Plan Tasks', 'Education Advisory Board', 'EAB',
-                                     'Education Advisory Board > EAB - Navigate  (01/01/2017 - 12/31/2017)')
-    except:
-        open_submenu(driver, time_type)
+            submenu_dropdown(driver, "(//div[text() = '{}'])[last()]", 'Project Plan Tasks',
+                             'Education Advisory Board', 'EAB',
+                             'Education Advisory Board > EAB - Navigate  (01/01/2017 - 12/31/2017)')
+    # except:
+    #     open_submenu(driver, time_type)
 
 
 def submenu_dropdown(driver, xpath_format, *menus):
-    import ipdb; ipdb.set_trace()
+    """
+    Traverse the dropdown menus
+    """
     for menu in menus:
         xpath = xpath_format.format(menu)
-        # WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, xpath))).click()
-        # import selenium.common.exceptions
-        # try:
-        element = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, xpath)))
+        element = get_element(driver, xpath)
 
         action = webdriver.common.action_chains.ActionChains(driver)
         action.move_to_element(element)
         action.click()
         action.perform()
-        time.sleep(1) # TODO: fixxxx
-        # except selenium.common.exceptions.TimeoutException:
-        #     import ipdb; ipdb.set_trace()
+
+        time.sleep(.8)
 
 
-user = os.getenv('USER')
-password = get_password(user)
+def main():
+    user = os.getenv('USER')
+    password = get_password(user)
 
-chrome_options = webdriver.ChromeOptions()
-chrome_options.add_argument("--incognito")
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument("--incognito")
 
-driver = webdriver.Chrome(chrome_options=chrome_options)
-driver.get("https://{}:{}@sso.advisory.com/workday/login".format(user, password))
+    driver = webdriver.Chrome(chrome_options=chrome_options)
+    driver.get("https://{}:{}@sso.advisory.com/workday/login".format(user, password))
 
-time_icon = "//span[text() = 'Time']"
-WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, time_icon))).click()
+    # get_element(driver, "(//div[@role = 'alertdialog']/descendant::button)[1]").click()
 
-this_week_button = "((//span[contains(text(), 'This Week (')])/..)[last()]"
-WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, this_week_button))).click()
+    time_icon = "//span[text() = 'Time']"
+    get_element(driver, time_icon).click()
 
-days_in_week = "(//div[contains(@class, 'day-separator')])[{}]"
-for counter, distributions in enumerate(week_distribution()):
-    for time_type, hours in distributions.iteritems():
-        element = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH,
-                                                                              days_in_week.format(counter + 1))))
+    this_week_button = "((//span[contains(text(), 'This Week (')])/..)[last()]"
+    get_element(driver, this_week_button).click()
 
-        # Click on the page to open the time dialog
-        action = webdriver.common.action_chains.ActionChains(driver)
-        action.move_to_element_with_offset(element, 5, element.size['height'] - 70)
-        action.click()
-        action.perform()
+    days_in_week = "(//div[contains(@class, 'day-separator')])[{}]"
+    for counter, distributions in enumerate(week_distribution()):
+        for time_type, hours in distributions.iteritems():
+            element = get_element(driver, days_in_week.format(counter + 1))
 
-        ok_button = "(//button/span[text() = 'OK'])/.."
-        ok_button_element = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, ok_button)))
+            # Click on the page to open the time dialog
+            action = webdriver.common.action_chains.ActionChains(driver)
+            action.move_to_element_with_offset(element, 5, element.size['height'] - 70)
+            action.click()
+            action.perform()
 
-        open_submenu(driver, time_type)
+            ok_button = "(//button/span[text() = 'OK'])/.."
+            ok_button_element = get_element(driver, ok_button)
 
-        time.sleep(3)  # TODO: find a better solution
+            open_submenu(driver, time_type)
 
-        hours_input = "(//label[contains(text(), 'Hour')]/../../div)[2]/*/input"
-        hours_input_element = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, hours_input)))
-        hours_input_element.send_keys(Keys.BACKSPACE*10)
-        hours_input_element.send_keys(str(hours))
+            time.sleep(1.5)  # TODO: find a better solution
 
-        ok_button_element.click()
+            hours_input = "(//label[contains(text(), 'Hour')]/../../div)[2]/*/input"
+            hours_input_element = get_element(driver, hours_input)
+            hours_input_element.send_keys(Keys.BACKSPACE*10)
+            hours_input_element.send_keys(str(hours))
 
-        time.sleep(5)  # TODO: find a better solution
+            ok_button_element.click()
 
-driver.close()
+            time.sleep(5)  # TODO: find a better solution
+
+    driver.close()
+
+
+def get_element(driver, xpath):
+    try:
+        return WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, xpath)))
+    except:
+        return WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, xpath)))
+
+
+if __name__ == '__main__':
+    main()
