@@ -72,9 +72,41 @@ def get_password(user):
     return password
 
 
+def open_submenu(driver, time_type):
+    time_type_label = "(//label[contains(text(), 'Time Type')]/../../div)[2]/div/span/div"
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, time_type_label))).click()
+
+    try:
+        # Make selection
+        if time_type == 'admin':
+            submenu_dropdown(driver, "//div[text() = '{}']", 'Project Plan Tasks', 'Education Advisory Board', 'All',
+                                     'Education Advisory Board > All - Admin/Other')
+        elif time_type == 'guide':
+            submenu_dropdown(driver, "//div[text() = '{}']", 'Project Plan Tasks', 'Education Advisory Board', 'EAB',
+                                     'Education Advisory Board > EAB - Guide  (01/01/2017 - 12/31/2017)')
+        elif time_type == 'navigate':
+            submenu_dropdown(driver, "//div[text() = '{}']", 'Project Plan Tasks', 'Education Advisory Board', 'EAB',
+                                     'Education Advisory Board > EAB - Navigate  (01/01/2017 - 12/31/2017)')
+    except:
+        open_submenu(driver, time_type)
+
+
 def submenu_dropdown(driver, xpath_format, *menus):
+    import ipdb; ipdb.set_trace()
     for menu in menus:
-        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, xpath_format.format(menu)))).click()
+        xpath = xpath_format.format(menu)
+        # WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, xpath))).click()
+        # import selenium.common.exceptions
+        # try:
+        element = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, xpath)))
+
+        action = webdriver.common.action_chains.ActionChains(driver)
+        action.move_to_element(element)
+        action.click()
+        action.perform()
+        time.sleep(1) # TODO: fixxxx
+        # except selenium.common.exceptions.TimeoutException:
+        #     import ipdb; ipdb.set_trace()
 
 
 user = os.getenv('USER')
@@ -89,39 +121,25 @@ driver.get("https://{}:{}@sso.advisory.com/workday/login".format(user, password)
 time_icon = "//span[text() = 'Time']"
 WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, time_icon))).click()
 
-this_week_button = "(//span[contains(text(), 'This Week (')])/.."
+this_week_button = "((//span[contains(text(), 'This Week (')])/..)[last()]"
 WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, this_week_button))).click()
 
 days_in_week = "(//div[contains(@class, 'day-separator')])[{}]"
 for counter, distributions in enumerate(week_distribution()):
     for time_type, hours in distributions.iteritems():
-        # for element in driver.find_elements_by_xpath(days_in_week):
         element = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH,
                                                                               days_in_week.format(counter + 1))))
 
         # Click on the page to open the time dialog
         action = webdriver.common.action_chains.ActionChains(driver)
-        action.move_to_element_with_offset(element, 5, 5)
+        action.move_to_element_with_offset(element, 5, element.size['height'] - 70)
         action.click()
         action.perform()
 
         ok_button = "(//button/span[text() = 'OK'])/.."
         ok_button_element = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, ok_button)))
 
-        # Open select the drop down
-        time_type_label = "(//label[contains(text(), 'Time Type')]/../../div)[2]"
-        driver.find_element_by_xpath(time_type_label).click()
-
-        # Make selection
-        if time_type == 'admin':
-            submenu_dropdown(driver, "//div[text() = '{}']", 'Project Plan Tasks', 'Education Advisory Board', 'All',
-                                     'Education Advisory Board > All - Admin/Other')
-        elif time_type == 'guide':
-            submenu_dropdown(driver, "//div[text() = '{}']", 'Project Plan Tasks', 'Education Advisory Board', 'EAB',
-                                     'Education Advisory Board > EAB - Guide  (01/01/2017 - 12/31/2017)')
-        elif time_type == 'navigate':
-            submenu_dropdown(driver, "//div[text() = '{}']", 'Project Plan Tasks', 'Education Advisory Board', 'EAB',
-                                     'Education Advisory Board > EAB - Navigate  (01/01/2017 - 12/31/2017)')
+        open_submenu(driver, time_type)
 
         time.sleep(3)  # TODO: find a better solution
 
@@ -131,5 +149,7 @@ for counter, distributions in enumerate(week_distribution()):
         hours_input_element.send_keys(str(hours))
 
         ok_button_element.click()
+
+        time.sleep(5)  # TODO: find a better solution
 
 driver.close()
