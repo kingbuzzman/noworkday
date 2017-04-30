@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 console = logging.StreamHandler()
 console.setLevel(logging.DEBUG)
-console.setFormatter(logging.Formatter('%(message)s'))
+console.setFormatter(logging.Formatter('%(levelname)s - %(message)s'))
 log.addHandler(console)
 
 
@@ -37,13 +37,13 @@ def time_distribution(hours):
         'guide': 0,
         'navigate': 0,
         # set a base for the inputs
-        'admin': quarter_round(float(random.randrange(200, 4000)) / 100)
+        'admin': quarter_round(random.triangular(6, 20, 6))
     }
 
     # Randomly loop over the remaining 2 slots and fill them out
     for key in sorted(['guide', 'navigate'], key=lambda x: random.random()):
-        high = (10000 - (sum(percents.values()) * 100))
-        percents[key] = quarter_round(random.randrange(0, high) / 100)
+        high = float(str((100 - (sum(percents.values())))))
+        percents[key] = quarter_round(random.triangular(0, high, high))
 
     log.debug('First iteration {} having a total of {} percents'.format(percents, sum(percents.values())))
 
@@ -140,18 +140,22 @@ def main():
     driver = webdriver.Chrome(chrome_options=chrome_options)
     driver.get("https://{}:{}@sso.advisory.com/workday/login".format(user, password))
 
+    log.info('Clicking on the "Time" section/icon')
     time_icon = "//span[text() = 'Time']"
     get_element(driver, time_icon).click()
 
+    log.info('Clicking on the "This Week"')
     this_week_button = "((//span[contains(text(), 'This Week (')])/..)[last()]"
     get_element(driver, this_week_button).click()
 
     days_in_week = "(//div[contains(@class, 'day-separator')])[{}]"
     for counter, distributions in enumerate(week_distribution()):
         for time_type, hours in distributions.iteritems():
+            log.info('Adding time entry for {}:{}'.format(time_type, hours))
             element = get_element(driver, days_in_week.format(counter + 1))
 
             # Click on the page to open the time dialog
+            log.debug('Opening the dialog')
             action = webdriver.common.action_chains.ActionChains(driver)
             action.move_to_element_with_offset(element, 5, element.size['height'] - 70)
             action.click()
@@ -164,11 +168,13 @@ def main():
 
             time.sleep(1.5)  # TODO: find a better solution
 
+            log.debug('Adding hours')
             hours_input = "(//label[contains(text(), 'Hour')]/../../div)[2]/*/input"
             hours_input_element = get_element(driver, hours_input)
             hours_input_element.send_keys(Keys.BACKSPACE*10)
             hours_input_element.send_keys(str(hours))
 
+            log.debug('Saving the entry')
             ok_button_element.click()
 
             time.sleep(5)  # TODO: find a better solution
@@ -178,9 +184,14 @@ def main():
 
 def get_element(driver, xpath):
     try:
-        return WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, xpath)))
+        element = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, xpath)))
     except:
-        return WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, xpath)))
+        try:
+            element = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, xpath)))
+        except:
+            element = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, xpath)))
+    time.sleep(0.2)  # TODO: find a better solution
+    return element
 
 
 if __name__ == '__main__':
