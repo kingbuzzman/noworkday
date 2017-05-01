@@ -81,9 +81,9 @@ def get_password(user):
     """
     Will use the OSX KeyChain to get and store your password
     """
-    password = keyring.get_password('workday', user)
-
-    if password is None:
+    try:
+        password = keyring.get_password('workday', user)
+    except Exception:
         print("Please enter your Advisory Board SSO password.")
         password = getpass.getpass('Password:')
         keyring.set_password('workday', user, password)
@@ -127,7 +127,7 @@ def submenu_dropdown(driver, xpath_format, *menus):
         action.click()
         action.perform()
 
-        time.sleep(.8)
+        time.sleep(1)
 
 
 def main():
