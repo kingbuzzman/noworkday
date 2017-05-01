@@ -81,12 +81,20 @@ def get_password(user):
     """
     Will use the OSX KeyChain to get and store your password
     """
-    password = keyring.get_password('workday', user)
+    def ask_password():
+        print('Please enter your Advisory Board SSO password.')
+        return getpass.getpass('Password:')
 
-    if password is None:
-        print("Please enter your Advisory Board SSO password.")
-        password = getpass.getpass('Password:')
-        keyring.set_password('workday', user, password)
+    try:
+        password = keyring.get_password('workday', user)
+
+        if password is None:
+            password = ask_password()
+            keyring.set_password('workday', user, password)
+    except keyring.backends._OS_X_API.Error:
+        print('You should really consider saying "Allow" or "Always Allow" and not being scur\'d all the time')
+        print('The password will NOT be saved.')
+        password = ask_password()
 
     return password
 
@@ -134,11 +142,17 @@ def main():
     user = os.getenv('USER')
     password = get_password(user)
 
+    canary_location = '/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary'
     chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument("--incognito")
+    chrome_options.add_argument('--incognito')
+
+    # support for headless chrome
+    if os.path.isfile(canary_location):
+        chrome_options.binary_location = canary_location
+        chrome_options.add_argument('--headless')
 
     driver = webdriver.Chrome(chrome_options=chrome_options)
-    driver.get("https://{}:{}@sso.advisory.com/workday/login".format(user, password))
+    driver.get('https://{}:{}@sso.advisory.com/workday/login'.format(user, password))
 
     log.info('Clicking on the "Time" section/icon')
     time_icon = "//span[text() = 'Time']"
