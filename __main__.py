@@ -90,7 +90,10 @@ def get_password(user):
 
         if password is None:
             password = ask_password()
-            keyring.set_password('workday', user, password)
+            try:
+                keyring.set_password('workday', user, password)
+            except keyring.errors.PasswordSetError as ex:
+                log.warn('Could not save password in KeyChain')
     except keyring.backends._OS_X_API.Error:
         print('You should really consider saying "Allow" or "Always Allow" and not being scur\'d all the time')
         print('The password will NOT be saved.')
@@ -154,6 +157,11 @@ def main():
     driver = webdriver.Chrome(chrome_options=chrome_options)
     driver.get('https://{}:{}@sso.advisory.com/workday/login'.format(user, password))
 
+    try:
+        get_element(driver, "//input[@id = 'Login']").click()
+    except:
+        pass
+
     log.info('Clicking on the "Time" section/icon')
     time_icon = "//span[text() = 'Time']"
     get_element(driver, time_icon).click()
@@ -162,7 +170,7 @@ def main():
     this_week_button = "((//span[contains(text(), 'This Week (')])/..)[last()]"
     get_element(driver, this_week_button).click()
 
-    days_in_week = "(//div[contains(@class, 'day-separator')])[{}]"
+    days_in_week = "(//div[contains(@class, 'day-separator')]/../*)[{}]"
     for counter, distributions in enumerate(week_distribution()):
         for time_type, hours in distributions.iteritems():
             log.info('Adding time entry for {}:{}'.format(time_type, hours))
