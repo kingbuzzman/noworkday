@@ -158,6 +158,7 @@ def main():
     driver.get('https://{}:{}@sso.advisory.com/workday/login'.format(user, password))
 
     try:
+        # SSO added an in between page that sometimes shows up and prompts the user to click Login
         get_element(driver, "//input[@id = 'Login']").click()
     except:
         pass
@@ -205,6 +206,12 @@ def main():
 
 
 def get_element(driver, xpath):
+    """
+    A total hack, the way that workday handles its UI is monstrous, and it will override the same element a couple of
+    times a second, thus this hack was created.
+
+    TODO: Fix this
+    """
     try:
         element = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, xpath)))
     except:
