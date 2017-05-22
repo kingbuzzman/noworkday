@@ -92,7 +92,7 @@ def get_password(user):
             password = ask_password()
             try:
                 keyring.set_password('workday', user, password)
-            except keyring.errors.PasswordSetError as ex:
+            except keyring.errors.PasswordSetError:
                 log.warn('Could not save password in KeyChain')
     except keyring.backends._OS_X_API.Error:
         print('You should really consider saying "Allow" or "Always Allow" and not being scur\'d all the time')
@@ -106,10 +106,6 @@ def open_submenu(driver, time_type):
     """
     Open the dialog's drop down menu
     """
-    log.debug('Opening the menu for Time Type: {}'.format(time_type))
-    time_type_label = "(//label[contains(text(), 'Time Type')]/../../div)[2]/div/span/div"
-    get_element(driver, time_type_label).click()
-
     # Make selection
     if time_type == 'admin':
         submenu_dropdown(driver, "(//div[text() = '{}'])[last()]", 'Project Plan Tasks',
@@ -169,38 +165,47 @@ def main():
 
     log.info('Clicking on the "This Week"')
     this_week_button = "((//span[contains(text(), 'This Week (')])/..)[last()]"
+    # this_week_button = "((//span[contains(text(), 'Last Week (')])/..)[last()]"
     get_element(driver, this_week_button).click()
 
-    days_in_week = "(//div[contains(@class, 'day-separator')]/../*)[{}]"
+    log.info('Clicking on "Enter Time"')
+    enter_time = "(//span[contains(text(), 'Enter Time')])[last()]"
+    get_element(driver, enter_time).click()
+
+    enter_time2 = "(//div[contains(text(), 'Enter Time')])[last()]"
+    get_element(driver, enter_time2).click()
+
+    days_in_week = "//ul[contains(@class, 'WNBO')]/li[{}]/div[2]/div"
+    days_in_week_content = "//div[contains(@class, 'WFCO')]/div[{}]"
     for counter, distributions in enumerate(week_distribution()):
-        for time_type, hours in distributions.iteritems():
-            log.info('Adding time entry for {}:{}'.format(time_type, hours))
-            element = get_element(driver, days_in_week.format(counter + 1))
 
-            # Click on the page to open the time dialog
-            log.debug('Opening the dialog')
-            action = webdriver.common.action_chains.ActionChains(driver)
-            action.move_to_element_with_offset(element, 5, element.size['height'] - 70)
-            action.click()
-            action.perform()
+        # Click on the page to open the time dialog
+        log.info('Selecting the date')
+        element = get_element(driver, days_in_week.format(counter + 1))
+        element.click()
 
-            ok_button = "(//button/span[text() = 'OK'])/.."
-            ok_button_element = get_element(driver, ok_button)
+        for distribution_counter, _ in enumerate(distributions.iteritems()):
+            time_type, hours = _
+            log.debug('Opening the menu for Time Type: {}'.format(time_type))
+
+            dropdown = '({}//span[contains(@class, "WLRM")])[{}]'.format(days_in_week_content.format(counter + 1),
+                                                                         distribution_counter + 1)
+            element = get_element(driver, dropdown)
+            driver.execute_script("return arguments[0].scrollIntoView(true);", element)
+            element.click()
 
             open_submenu(driver, time_type)
 
-            time.sleep(1.5)  # TODO: find a better solution
-
             log.debug('Adding hours')
-            hours_input = "(//label[contains(text(), 'Hour')]/../../div)[2]/*/input"
-            hours_input_element = get_element(driver, hours_input)
-            hours_input_element.send_keys(Keys.BACKSPACE*10)
-            hours_input_element.send_keys(str(hours))
+            input_hours = '({}//input[not(ancestor::div[contains(@style, "display: none")])])[{}]'.format(
+                days_in_week_content.format(counter + 1), distribution_counter + 1)
+            element = get_element(driver, input_hours)
+            element.send_keys(Keys.BACKSPACE*10)
+            element.send_keys(str(hours))
 
-            log.debug('Saving the entry')
-            ok_button_element.click()
-
-            time.sleep(5)  # TODO: find a better solution
+    log.info('Saving all the data')
+    get_element(driver, "(//button/span[text() = 'OK'])/..").click()
+    time.sleep(5)
 
     driver.close()
 
@@ -212,6 +217,7 @@ def get_element(driver, xpath):
 
     TODO: Fix this
     """
+    log.debug('Selecting: {}'.format(xpath))
     try:
         element = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, xpath)))
     except:
