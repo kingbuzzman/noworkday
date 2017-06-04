@@ -175,10 +175,9 @@ def main():
     enter_time2 = "(//div[contains(text(), 'Enter Time')])[last()]"
     get_element(driver, enter_time2).click()
 
-    days_in_week = "//ul[contains(@class, 'WNBO')]/li[{}]/div[2]/div"
-    days_in_week_content = "//div[contains(@class, 'WFCO')]/div[{}]"
+    days_in_week = '//*[@id="wd-TimeEntry-NO_METADATA_ID"]/div/div[1]/ul/li[{}]'
+    days_in_week_content = '//*[contains(@id, "tabPanel_")]/div[{}]//label[contains(text(), "Time Type")]/../../../../../../../../div[{}]'
     for counter, distributions in enumerate(week_distribution()):
-
         # Click on the page to open the time dialog
         log.info('Selecting the date')
         element = get_element(driver, days_in_week.format(counter + 1))
@@ -188,8 +187,10 @@ def main():
             time_type, hours = _
             log.debug('Opening the menu for Time Type: {}'.format(time_type))
 
-            dropdown = '({}//span[contains(@class, "WLRM")])[{}]'.format(days_in_week_content.format(counter + 1),
-                                                                         distribution_counter + 1)
+            dropdown = '{}//label[contains(text(), "Time Type")]/../../div[2]'.format(
+                days_in_week_content.format(counter + 1, distribution_counter + 1),
+                distribution_counter + 1
+            )
             element = get_element(driver, dropdown)
             driver.execute_script("return arguments[0].scrollIntoView(true);", element)
             element.click()
@@ -197,8 +198,10 @@ def main():
             open_submenu(driver, time_type)
 
             log.debug('Adding hours')
-            input_hours = '({}//input[not(ancestor::div[contains(@style, "display: none")])])[{}]'.format(
-                days_in_week_content.format(counter + 1), distribution_counter + 1)
+            input_hours = '{}//label[contains(text(), "Quantity")]/../../div[2]//input'.format(
+                days_in_week_content.format(counter + 1, distribution_counter + 1),
+                distribution_counter + 1
+            )
             element = get_element(driver, input_hours)
             element.send_keys(Keys.BACKSPACE*10)
             element.send_keys(str(hours))
