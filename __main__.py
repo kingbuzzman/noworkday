@@ -133,14 +133,9 @@ def main():
     user = os.getenv('USER')
     password = get_password(user)
 
-    canary_location = '/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary'
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument('--incognito')
-
-    # support for headless chrome
-    if os.path.isfile(canary_location):
-        chrome_options.binary_location = canary_location
-        chrome_options.add_argument('--headless')
+    chrome_options.add_argument('--headless')
 
     driver = webdriver.Chrome(chrome_options=chrome_options)
     driver.get('https://{}:{}@sso.advisory.com/workday/login'.format(user, password))
