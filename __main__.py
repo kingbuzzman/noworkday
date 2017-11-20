@@ -1,9 +1,9 @@
 import os
-import keyring
 import getpass
 import random
 import time
 import logging
+import subprocess
 
 from decimal import Decimal
 
@@ -79,24 +79,16 @@ def week_distribution(min_daily_hours=8, max_daily_hours=13, days_in_week=5):
 
 def get_password(user):
     """
-    Will use the OSX KeyChain to get and store your password
+    Will use the OSX KeyChain to get your password
     """
     def ask_password():
         print('Please enter your Advisory Board SSO password.')
         return getpass.getpass('Password:')
 
-    try:
-        password = keyring.get_password('workday', user)
-
-        if password is None:
-            password = ask_password()
-            try:
-                keyring.set_password('workday', user, password)
-            except keyring.errors.PasswordSetError:
-                log.warn('Could not save password in KeyChain')
-    except keyring.backends._OS_X_API.Error:
-        print('You should really consider saying "Allow" or "Always Allow" and not being scur\'d all the time')
-        print('The password will NOT be saved.')
+    command = '/usr/bin/security find-generic-password -wl abcemployees'.split(' ')
+    process = subprocess.Popen(command, stdout=subprocess.PIPE)
+    password = process.stdout.read().strip()
+    if password is None:
         password = ask_password()
 
     return password
