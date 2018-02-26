@@ -30,30 +30,14 @@ def quarter_round(num):
 
 def time_distribution(hours):
     """
-    Generates 3 time slots based on the amount of hours
+    Generates 2 time slots based on the amount of hours
     """
     log.info('Generating {} hours worth of data'.format(hours))
+    CAP_PERCENT = random.triangular(45, 70, 60)
     percents = {
-        'guide': 0,
-        'navigate': 0,
-        # set a base for the inputs
-        'admin': quarter_round(random.triangular(6, 20, 6))
+        'student': CAP_PERCENT,
+        'admin': 100 - CAP_PERCENT
     }
-
-    # Randomly loop over the remaining 2 slots and fill them out
-    for key in sorted(['guide', 'navigate'], key=lambda x: random.random()):
-        high = float(str((100 - (sum(percents.values())))))
-        percents[key] = quarter_round(random.triangular(0, high, high))
-
-    log.debug('First iteration {} having a total of {} percents'.format(percents, sum(percents.values())))
-
-    total_sum = sum(percents.values())
-    while total_sum != 100:
-        high = (100 - total_sum)
-        percents[random.sample(percents.keys(), 1)[0]] += quarter_round(float(random.randrange(0, high * 100)) / 100)
-        total_sum = sum(percents.values())
-
-        log.debug('Iteration yielded {} with a sum of {}'.format(percents, sum(percents.values())))
 
     distribution = {}
     minutes = float(hours) * 60
@@ -101,15 +85,11 @@ def open_submenu(driver, time_type):
     # Make selection
     if time_type == 'admin':
         submenu_dropdown(driver, "(//div[text() = '{}'])[last()]", 'Project Plan Tasks',
-                         'Education Advisory Board', 'All', 'Education Advisory Board > All - Admin/Other')
-    elif time_type == 'guide':
+                         'Education Advisory Board', 'All', 'Education Advisory Board > All > Admin/Other')
+    elif time_type == 'student':
         submenu_dropdown(driver, "(//div[text() = '{}'])[last()]", 'Project Plan Tasks',
                          'Education Advisory Board', 'EAB',
-                         'Education Advisory Board > EAB - Guide  (01/01/2017 - 12/31/2017)')
-    elif time_type == 'navigate':
-        submenu_dropdown(driver, "(//div[text() = '{}'])[last()]", 'Project Plan Tasks',
-                         'Education Advisory Board', 'EAB',
-                         'Education Advisory Board > EAB - Navigate  (01/01/2017 - 12/31/2017)')
+                         'Education Advisory Board > EAB > Student Platform  (01/01/2018 - 03/31/2018)')
 
 
 def submenu_dropdown(driver, xpath_format, *menus):
@@ -152,15 +132,17 @@ def main():
 
     log.info('Clicking on the "This Week"')
     this_week_button = "((//span[contains(text(), 'This Week (')])/..)[last()]"
-    # this_week_button = "((//span[contains(text(), 'Last Week (')])/..)[last()]"
     get_element(driver, this_week_button).click()
 
-    log.info('Clicking on "Enter Time"')
-    enter_time = "(//span[contains(text(), 'Enter Time')])[last()]"
-    get_element(driver, enter_time).click()
+    # # Two weeks ago
+    # get_element(driver, '//button[@aria-label="Previous Week"]').click()
+    # time.sleep(2)
 
-    enter_time2 = "(//div[contains(text(), 'Enter Time')])[last()]"
-    get_element(driver, enter_time2).click()
+    log.info('Clicking on "Enter Time"')
+    get_element(driver, "(//span[contains(text(), 'Enter Time')])[last()]").click()
+    # # Sometimes you need this one
+    # get_element(driver, "//span[contains(text(), 'Enter Time')]").click()
+    get_element(driver, "(//div[contains(text(), 'Enter Time')])[last()]").click()
 
     days_in_week = '//*[@id="wd-TimeEntry-NO_METADATA_ID"]/div/div[1]/ul/li[{}]'
     days_in_week_content = '//*[contains(@id, "tabPanel_")]/div[{}]//label[contains(text(), "Time Type")]/../../../../../../../../div[{}]'

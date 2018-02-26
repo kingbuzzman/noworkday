@@ -8,6 +8,6 @@ venv/bin/pip install -r requirements.txt
 
 # Install chromedriver
 cd venv/bin/
-curl -s https://chromedriver.storage.googleapis.com/2.33/chromedriver_mac64.zip > chromedriver_mac64.zip
+curl -s https://chromedriver.storage.googleapis.com/2.35/chromedriver_mac64.zip > chromedriver_mac64.zip
 unzip chromedriver_mac64.zip
 rm chromedriver_mac64.zip
