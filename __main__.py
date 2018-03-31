@@ -135,7 +135,7 @@ def main():
     get_element(driver, this_week_button).click()
 
     # # Two weeks ago
-    # get_element(driver, '//button[@aria-label="Previous Week"]').click()
+    # get_element(driver, "((//span[contains(text(), 'Last Week (')])/..)[last()]").click()
     # time.sleep(2)
 
     log.info('Clicking on "Enter Time"')
@@ -144,7 +144,7 @@ def main():
     # get_element(driver, "//span[contains(text(), 'Enter Time')]").click()
     get_element(driver, "(//div[contains(text(), 'Enter Time')])[last()]").click()
 
-    days_in_week = '//*[@id="wd-TimeEntry-NO_METADATA_ID"]/div/div[1]/ul/li[{}]'
+    days_in_week = '//*[contains(@id, "wd-TimeEntry-NO_METADATA_ID")]/div/div[1]/ul/li[{}]'
     days_in_week_content = '//*[contains(@id, "tabPanel_")]/div[{}]//label[contains(text(), "Time Type")]/../../../../../../../../div[{}]'
     for counter, distributions in enumerate(week_distribution()):
         # Click on the page to open the time dialog
@@ -172,7 +172,7 @@ def main():
                 distribution_counter + 1
             )
             element = get_element(driver, input_hours)
-            element.send_keys(Keys.BACKSPACE*10)
+            element.send_keys(Keys.BACKSPACE * 10)
             element.send_keys(str(hours))
 
     log.info('Saving all the data')
