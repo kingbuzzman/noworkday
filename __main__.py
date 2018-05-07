@@ -87,9 +87,9 @@ def open_submenu(driver, time_type):
         submenu_dropdown(driver, "(//div[text() = '{}'])[last()]", 'Project Plan Tasks',
                          'Education Advisory Board', 'All', 'Education Advisory Board > All > Admin/Other')
     elif time_type == 'student':
-        submenu_dropdown(driver, "(//div[text() = '{}'])[last()]", 'Project Plan Tasks',
+        submenu_dropdown(driver, "(//div[contains(text(), '{}')])[last()]", 'Project Plan Tasks',
                          'Education Advisory Board', 'EAB',
-                         'Education Advisory Board > EAB > Student Platform  (01/01/2018 - 03/31/2018)')
+                         'Education Advisory Board > EAB > Student Platform')
 
 
 def submenu_dropdown(driver, xpath_format, *menus):
