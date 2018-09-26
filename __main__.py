@@ -41,7 +41,7 @@ def time_distribution(hours):
 
     distribution = {}
     minutes = float(hours) * 60
-    for key, percent in percents.iteritems():
+    for key, percent in percents.items():
         distribution[key] = quarter_round(minutes * (float(percent) / 100) / 60)
 
     log.debug('Created {} with a total hour count of {}'.format(distribution, sum(distribution.values())))
@@ -56,7 +56,7 @@ def week_distribution(min_daily_hours=8, max_daily_hours=13, days_in_week=5):
     log.info('Generating {} day(s) worth of timesheets with a minimum of {} hours and a maximum of {} hours'.format(
         days_in_week, min_daily_hours, max_daily_hours))
 
-    for _ in xrange(days_in_week):
+    for _ in range(days_in_week):
         daily_hours = quarter_round(random.uniform(min_daily_hours, max_daily_hours))
         yield time_distribution(daily_hours)
 
@@ -71,7 +71,7 @@ def get_password(user):
 
     command = '/usr/bin/security find-generic-password -wl abcemployees'.split(' ')
     process = subprocess.Popen(command, stdout=subprocess.PIPE)
-    password = process.stdout.read().strip()
+    password = process.stdout.read().strip().decode()
     if password is None:
         password = ask_password()
 
@@ -117,7 +117,7 @@ def main():
     chrome_options.add_argument('--incognito')
     chrome_options.add_argument('--headless')
 
-    driver = webdriver.Chrome(chrome_options=chrome_options)
+    driver = webdriver.Chrome(options=chrome_options)
     driver.get('https://{}:{}@sso.advisory.com/workday/login'.format(user, password))
 
     try:
@@ -139,7 +139,7 @@ def main():
     # time.sleep(2)
 
     log.info('Clicking on "Enter Time"')
-    get_element(driver, "(//span[contains(text(), 'Enter Time')])[last()]").click()
+    get_element(driver, "(//span[contains(text(), 'Enter Time')])[last()]/..", wait_time=30).click()
     # # Sometimes you need this one
     # get_element(driver, "//span[contains(text(), 'Enter Time')]").click()
     get_element(driver, "(//div[contains(text(), 'Enter Time')])[last()]").click()
@@ -152,7 +152,7 @@ def main():
         element = get_element(driver, days_in_week.format(counter + 1))
         element.click()
 
-        for distribution_counter, _ in enumerate(distributions.iteritems()):
+        for distribution_counter, _ in enumerate(distributions.items()):
             time_type, hours = _
             log.debug('Opening the menu for Time Type: {}'.format(time_type))
 
@@ -182,7 +182,7 @@ def main():
     driver.close()
 
 
-def get_element(driver, xpath):
+def get_element(driver, xpath, wait_time=5):
     """
     A total hack, the way that workday handles its UI is monstrous, and it will override the same element a couple of
     times a second, thus this hack was created.
@@ -191,12 +191,12 @@ def get_element(driver, xpath):
     """
     log.debug('Selecting: {}'.format(xpath))
     try:
-        element = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, xpath)))
+        element = WebDriverWait(driver, wait_time).until(EC.element_to_be_clickable((By.XPATH, xpath)))
     except:
         try:
-            element = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, xpath)))
+            element = WebDriverWait(driver, wait_time).until(EC.element_to_be_clickable((By.XPATH, xpath)))
         except:
-            element = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, xpath)))
+            element = WebDriverWait(driver, wait_time).until(EC.element_to_be_clickable((By.XPATH, xpath)))
     time.sleep(0.2)  # TODO: find a better solution
     return element
 

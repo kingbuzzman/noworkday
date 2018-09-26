@@ -1,2 +1,2 @@
-selenium==3.4.1
+selenium==3.14.1
 ipdb
