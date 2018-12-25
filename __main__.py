@@ -89,7 +89,7 @@ def open_submenu(driver, time_type):
     elif time_type == 'student':
         submenu_dropdown(driver, "(//div[contains(text(), '{}')])[last()]", 'Project Plan Tasks',
                          'Education Advisory Board', 'EAB',
-                         'Education Advisory Board > EAB > Student Platform')
+                         'Education Advisory Board > EAB > Navigate: Smart Guidance')
 
 
 def submenu_dropdown(driver, xpath_format, *menus):
@@ -118,7 +118,14 @@ def main():
     chrome_options.add_argument('--headless')
 
     driver = webdriver.Chrome(options=chrome_options)
-    driver.get('https://{}:{}@sso.advisory.com/workday/login'.format(user, password))
+    driver.get('http://workday.advisory.com')
+    element = get_element(driver, '//input[@name="loginfmt"]')
+    element.send_keys(str(user))
+    element.send_keys(Keys.ENTER)
+    element = get_element(driver, '//input[@name="passwd"]')
+    element.send_keys(str(password))
+    element.send_keys(Keys.ENTER)
+    get_element(driver, "//input[@value='Yes']").click()
 
     try:
         # SSO added an in between page that sometimes shows up and prompts the user to click Login
@@ -138,6 +145,11 @@ def main():
     # get_element(driver, "((//span[contains(text(), 'Last Week (')])/..)[last()]").click()
     # time.sleep(2)
 
+    enter_time(driver)
+    driver.close()
+
+
+def enter_time(driver):
     log.info('Clicking on "Enter Time"')
     get_element(driver, "(//span[contains(text(), 'Enter Time')])[last()]/..", wait_time=30).click()
     # # Sometimes you need this one
@@ -178,8 +190,6 @@ def main():
     log.info('Saving all the data')
     get_element(driver, "(//button/span[text() = 'OK'])/..").click()
     time.sleep(5)
-
-    driver.close()
 
 
 def get_element(driver, xpath, wait_time=5):
